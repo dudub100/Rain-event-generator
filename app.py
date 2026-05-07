@@ -27,20 +27,22 @@ def get_coordinates(city_name):
 @st.cache_data(show_spinner=False)
 def calculate_link_statistics(lat, lon, freq_GHz, distance_km, availability=0.01):
     """Calculates ITU-R P.837 and P.530 rain statistics."""
-    # ITU-R P.837: Rain rate
-    R_001 = itur.models.itu837.rain_rate(lat, lon, p=availability)
+    # 1. ITU-R P.837: Rain rate
+    R_001 = itur.models.itu837.rainfall_rate(lat, lon, p=availability)
     
-    # ITU-R P.837: Probability of rain
+    # 2. ITU-R P.837: Probability of rain
     try:
-        P_rain = itur.models.itu837.probability_of_rain(lat, lon) / 100.0
+        P_rain = float(itur.models.itu837.rainfall_probability(lat, lon)) / 100.0
     except AttributeError:
         P_rain = 0.05 # Fallback if specific grid data is missing
         
-    # ITU-R P.530: Terrestrial Path Attenuation (tau=90 for Vertical Polarization)
-    A_001 = itur.models.itu530.rain_attenuation(lat, lon, distance_km, freq_GHz, p=availability, tau=90)
+    # 3. ITU-R P.530: Terrestrial Path Attenuation 
+    # Note: P.530 requires an elevation angle (el), which is 0 for terrestrial links
+    A_001 = itur.models.itu530.rain_attenuation(lat, lon, distance_km, freq_GHz, el=0, p=availability, tau=90)
     
     # Return standard float values to keep Streamlit cache happy
     return float(R_001.value), float(A_001.value), float(P_rain)
+
 
 @st.cache_data
 def convert_df_to_csv(df):
